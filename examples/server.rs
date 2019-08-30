@@ -2,7 +2,6 @@
 //!
 //! First parameter is the mandatory port to use.
 //! Certificate and private key are hardcoded to sample files.
-#![feature(async_await)]
 #![deny(warnings)]
 use futures::{Stream, StreamExt, TryFutureExt, TryStreamExt};
 use hyper::service::service_fn;
@@ -33,9 +32,7 @@ async fn run_server() -> io::Result<()> {
         Some(ref p) => p.to_owned(),
         None => "1337".to_owned(),
     };
-    let addr = format!("127.0.0.1:{}", port)
-        .parse()
-        .map_err(|e| error(format!("{}", e)))?;
+    let addr = format!("127.0.0.1:{}", port);
 
     // Build TLS configuration.
     let tls_cfg = {
@@ -52,8 +49,9 @@ async fn run_server() -> io::Result<()> {
     };
 
     // Create a TCP listener via tokio.
+    let server_addr = addr.clone();
     let fut = async move {
-        let tcp = TcpListener::bind(&addr)?;
+        let tcp = TcpListener::bind(&server_addr).await?;
         let tls_acceptor = TlsAcceptor::from(tls_cfg);
         // Prepare a long-running future stream to accept and serve cients.
         let incoming_tls_stream: Pin<Box<dyn Stream<Item=Result<TlsStream<TcpStream>, io::Error>>>> = tcp.incoming()
